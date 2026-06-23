@@ -1,8 +1,8 @@
 // Google Apps Script — Scontrino Z → Corrispettivi
 //
 // Script Properties da configurare (Progetto → Impostazioni → Proprietà script):
-//   ANTHROPIC_API_KEY  → chiave API Anthropic
-//   SPREADSHEET_2026   → 1sXz2Mh3jTeTElGy0UAIw8UgO9RSuHaV5QOXNPJVMjo4
+//   GEMINI_API_KEY   → chiave API da aistudio.google.com (gratuita)
+//   SPREADSHEET_2026 → 1sXz2Mh3jTeTElGy0UAIw8UgO9RSuHaV5QOXNPJVMjo4
 //
 // Deployment → Distribuisci → Nuova distribuzione → App web
 //   Esegui come: Me  |  Accesso: Chiunque
@@ -36,12 +36,12 @@ function jsonOut(obj) {
 }
 
 // ---------------------------------------------------------------------------
-// ANALISI IMMAGINE CON CLAUDE HAIKU
+// ANALISI IMMAGINE CON GEMINI FLASH
 // ---------------------------------------------------------------------------
 
 function analyzeImage(imageBase64, mediaType) {
-  const apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY non configurata nelle Script Properties');
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY non configurata nelle Script Properties');
 
   const prompt =
     'Sei un assistente per una farmacia italiana. Analizza questo scontrino Z ' +
@@ -64,29 +64,27 @@ function analyzeImage(imageBase64, mediaType) {
     '"servizi0":0,"serviziIva":0,"shopper":0,"dpi":0,"fatture":0,"scontrini":0}';
 
   const payload = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-        { type: 'text', text: prompt }
+    contents: [{
+      parts: [
+        { inline_data: { mime_type: mediaType, data: imageBase64 } },
+        { text: prompt }
       ]
-    }]
+    }],
+    generationConfig: { maxOutputTokens: 512, temperature: 0 }
   };
 
-  const resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+  const resp = UrlFetchApp.fetch(url, {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   });
 
   const rd = JSON.parse(resp.getContentText());
-  if (rd.error) throw new Error('Claude API: ' + rd.error.message);
+  if (rd.error) throw new Error('Gemini API: ' + rd.error.message);
 
-  const text = rd.content[0].text.trim();
+  const text = rd.candidates[0].content.parts[0].text.trim();
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Risposta AI non valida: ' + text.substring(0, 200));
 
