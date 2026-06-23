@@ -73,7 +73,7 @@ function analyzeImage(imageBase64, mediaType) {
     generationConfig: { maxOutputTokens: 512, temperature: 0 }
   };
 
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
   const resp = UrlFetchApp.fetch(url, {
     method: 'post',
     contentType: 'application/json',
