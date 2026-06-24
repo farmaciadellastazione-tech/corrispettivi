@@ -151,7 +151,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.2</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.3</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -241,7 +241,7 @@ async function analyzeImage() {
             { inline_data: { mime_type: imgType, data: imgB64 } },
             { text: prompt }
           ]}],
-          generationConfig: { maxOutputTokens: 512, temperature: 0, responseMimeType: 'application/json' }
+          generationConfig: { maxOutputTokens: 512, temperature: 0 }
         })
       }
     );
@@ -251,8 +251,9 @@ async function analyzeImage() {
     let parsed;
     try { parsed = JSON.parse(text); } catch(_) {
       const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('Risposta AI non valida: ' + text.substring(0, 120));
-      parsed = JSON.parse(match[0]);
+      const jsonStr = match ? match[0] : (text.includes('"data"') ? '{' + text + '}' : null);
+      if (!jsonStr) throw new Error('Risposta AI non valida: ' + text.substring(0, 120));
+      parsed = JSON.parse(jsonStr);
     }
     hideStatus();
     renderResult(parsed);
