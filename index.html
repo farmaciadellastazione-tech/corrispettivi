@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Scontrino Z">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#4f8ef7">
 <title>Scontrino Z</title>
 <style>
   :root {
@@ -150,8 +153,8 @@
   </div>
 </main>
 <script>
-const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbz1rxC9ebSyYE1_CuXbm-fO5iy_mwA-q6TLjVnDj9KixCEUGDsYAwN89lAwyD8SsYI/exec';
-const GEMINI_MODEL  = 'gemini-1.5-flash';
+const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
+const GEMINI_MODEL  = 'gemini-2.0-flash';
 const FIELDS = [
   {key:'asl',label:'ASL'},{key:'farmaco',label:'Farmaco'},{key:'parafarmaco',label:'Parafarmaco'},
   {key:'varie',label:'Varie'},{key:'servizi0',label:'Servizi IVA 0%'},{key:'serviziIva',label:'Servizi IVAti'},
@@ -307,6 +310,10 @@ function resetAll() {
   document.getElementById('analyze-btn').disabled = false;
   document.getElementById('note-input').value = '';
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
 }
 
 function toast(m) {
