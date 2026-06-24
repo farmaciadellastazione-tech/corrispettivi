@@ -151,7 +151,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.1</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.2</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -247,11 +247,15 @@ async function analyzeImage() {
     );
     const rd = await resp.json();
     if (rd.error) throw new Error('Gemini: ' + rd.error.message);
-    const text  = rd.candidates[0].content.parts[0].text.trim();
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('Risposta AI non valida: ' + text.substring(0, 100));
+    const text = rd.candidates[0].content.parts[0].text.trim();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch(_) {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('Risposta AI non valida: ' + text.substring(0, 120));
+      parsed = JSON.parse(match[0]);
+    }
     hideStatus();
-    renderResult(JSON.parse(match[0]));
+    renderResult(parsed);
   } catch(err) {
     hideStatus(); showError(err.message);
     document.getElementById('analyze-btn').disabled = false;
