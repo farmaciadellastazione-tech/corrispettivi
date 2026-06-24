@@ -241,7 +241,7 @@ async function analyzeImage() {
             { inline_data: { mime_type: imgType, data: imgB64 } },
             { text: prompt }
           ]}],
-          generationConfig: { maxOutputTokens: 512, temperature: 0 }
+          generationConfig: { maxOutputTokens: 512, temperature: 0, responseMimeType: 'application/json' }
         })
       }
     );
