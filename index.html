@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Scontrino Z">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#4f8ef7">
 <title>Scontrino Z</title>
 <style>
   :root {
@@ -120,9 +123,8 @@
   </div>
 </main>
 <script>
-// URL dello script integrato di default
-const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyfk0OGMM72XBpb_xBdQ4Y4A2S2xbgh36CmvdaAIePrKCQRo8l0eTOj_SIuX24f1qksSw/exec';
-
+const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
+const GEMINI_MODEL  = 'gemini-2.0-flash';
 const FIELDS = [
   {key:'asl',label:'ASL'},{key:'farmaco',label:'Farmaco'},{key:'parafarmaco',label:'Parafarmaco'},
   {key:'varie',label:'Varie'},{key:'servizi0',label:'Servizi IVA 0%'},{key:'serviziIva',label:'Servizi IVAti'},
@@ -190,15 +192,28 @@ async function writeToSheet(){
     document.getElementById('success-detail').textContent=`${data.date} · ${data.tab} · Totale € ${fmt(data.total)}`;
   }catch(err){hideStatus();showError(err.message);document.getElementById('write-btn').disabled=false;}
 }
-function setStatus(m){document.getElementById('status-text').textContent=m;document.getElementById('status-box').style.display='block';}
-function hideStatus(){document.getElementById('status-box').style.display='none';}
-function showError(m){const el=document.getElementById('error-box');el.textContent='⚠️ '+m;el.style.display='block';el.scrollIntoView({behavior:'smooth',block:'nearest'});}
-function resetAll(){
-  imgB64=null;document.getElementById('file-input').value='';
-  document.getElementById('upload-area').style.display='';
-  ['preview-container','result-card','status-box','success-msg','error-box'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('analyze-btn').disabled=false;document.getElementById('note-input').value='';
-  document.getElementById('date-input').value=new Date().toISOString().split('T')[0];
+
+function setStatus(m) { document.getElementById('status-text').textContent = m; document.getElementById('status-box').style.display = 'block'; }
+function hideStatus()  { document.getElementById('status-box').style.display = 'none'; }
+function showError(m)  { const el = document.getElementById('error-box'); el.textContent = '⚠️ ' + m; el.style.display = 'block'; el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+
+function resetAll() {
+  imgB64 = null; document.getElementById('file-input').value = '';
+  document.getElementById('upload-area').style.display = '';
+  ['preview-container','result-card','status-box','success-msg','error-box'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('note-input').value = '';
+  document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+
+function toast(m) {
+  const t = document.createElement('div'); t.textContent = m;
+  Object.assign(t.style, {position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%)',background:'#222636',color:'#e8eaf0',padding:'10px 20px',borderRadius:'99px',fontSize:'13px',fontWeight:'600',zIndex:'999',border:'1px solid #2e3347'});
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
 }
 function toast(m){const t=document.createElement('div');t.textContent=m;Object.assign(t.style,{position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%)',background:'#222636',color:'#e8eaf0',padding:'10px 20px',borderRadius:'99px',fontSize:'13px',fontWeight:'600',zIndex:'999',border:'1px solid #2e3347'});document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
 </script>
