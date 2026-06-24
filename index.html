@@ -24,24 +24,34 @@
   header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
   header p { font-size: 11px; color: var(--muted); margin-top: 1px; }
   main { max-width: 480px; margin: 0 auto; padding: 18px 14px 40px; display: flex; flex-direction: column; gap: 14px; }
+
+  .warn-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--amber); cursor: pointer; }
+  .warn-banner strong { display: block; margin-bottom: 2px; font-size: 14px; }
+
   .upload-area { background: var(--surface); border: 2px dashed var(--border); border-radius: 16px; padding: 44px 20px; text-align: center; cursor: pointer; position: relative; transition: border-color 0.2s, background 0.2s; }
   .upload-area:active { border-color: var(--accent); background: rgba(79,142,247,0.05); }
   .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .upload-icon { font-size: 52px; display: block; margin-bottom: 14px; }
   .upload-area h2 { font-size: 19px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
   .upload-area p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
   #preview-container { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
   #preview-img { width: 100%; max-height: 300px; object-fit: contain; background: #000; display: block; }
   .preview-actions { padding: 12px; display: flex; gap: 8px; }
+
   .btn-primary { flex: 1; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 12px; padding: 16px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
   .btn-primary:active { opacity: 0.85; }
   .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
   .btn-ghost { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
   .btn-ghost:active { background: var(--border); color: var(--text); }
+
   #status-box { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 30px 20px; text-align: center; }
   .spinner { width: 42px; height: 42px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   #status-text { font-size: 14px; color: var(--muted); }
+
+  #error-box { display: none; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--red); line-height: 1.5; }
+
   #result-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
   .result-header { padding: 13px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .result-header h3 { font-size: 14px; font-weight: 700; }
@@ -63,20 +73,23 @@
   .total-label { font-size: 13px; font-weight: 600; color: var(--muted); }
   .total-value { font-family: var(--mono); font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
   .result-actions { padding: 12px; display: flex; gap: 8px; }
+
   #success-msg { display: none; background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); border-radius: 14px; padding: 32px 20px; text-align: center; }
   #success-msg .icon { font-size: 48px; margin-bottom: 10px; }
   #success-msg h3 { font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
   #success-msg p { font-size: 13px; color: var(--muted); line-height: 1.5; }
   #success-msg .btn-ghost { margin-top: 18px; width: 100%; }
-  #error-box { display: none; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--red); line-height: 1.5; }
+
   .settings-toggle { text-align: center; font-size: 11px; color: var(--muted); padding: 4px; cursor: pointer; }
   .settings-toggle:active { color: var(--text); }
-  #url-bar { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; gap: 8px; align-items: center; }
-  #url-bar.show { display: flex; }
-  #url-bar input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 11px; font-family: var(--mono); outline: none; min-width: 0; }
-  #url-bar input:focus { border-color: var(--accent); }
-  .btn-sm { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  .btn-sm:active { background: var(--border); color: var(--text); }
+  #settings-panel { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; flex-direction: column; gap: 10px; }
+  #settings-panel.show { display: flex; }
+  .setting-row { display: flex; flex-direction: column; gap: 5px; }
+  .setting-row label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .setting-row input { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; color: var(--text); font-size: 12px; font-family: var(--mono); outline: none; }
+  .setting-row input:focus { border-color: var(--accent); }
+  .btn-save { align-self: flex-end; background: var(--accent); border: none; border-radius: 8px; padding: 9px 18px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-save:active { opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -85,12 +98,18 @@
   <div><h1>Scontrino Z</h1><p>Farmacia della Stazione</p></div>
 </header>
 <main>
+  <div id="warn-banner" class="warn-banner" onclick="openSettings()" style="display:none">
+    <strong>Chiave Gemini non configurata</strong>
+    Tocca qui → Impostazioni per inserirla.
+  </div>
+
   <div class="upload-area" id="upload-area">
     <input type="file" id="file-input" accept="image/*">
     <span class="upload-icon">📷</span>
     <h2>Scatta lo scontrino Z</h2>
     <p>Tocca per aprire la fotocamera<br>o scegli dalla galleria</p>
   </div>
+
   <div id="preview-container">
     <img id="preview-img" alt="Scontrino">
     <div class="preview-actions">
@@ -98,8 +117,10 @@
       <button class="btn-ghost" onclick="resetAll()">✕</button>
     </div>
   </div>
+
   <div id="status-box"><div class="spinner"></div><div id="status-text">Lettura in corso…</div></div>
   <div id="error-box"></div>
+
   <div id="result-card">
     <div class="result-header"><h3>Dati estratti — verifica</h3><span class="badge badge-amber">Controlla</span></div>
     <div class="date-row"><span>Data</span><input type="date" id="date-input"></div>
@@ -111,15 +132,24 @@
       <button class="btn-ghost" onclick="resetAll()">✕</button>
     </div>
   </div>
+
   <div id="success-msg">
     <div class="icon">✅</div><h3>Foglio aggiornato!</h3>
     <p id="success-detail"></p>
     <button class="btn-ghost" onclick="resetAll()">Nuovo scontrino</button>
   </div>
-  <div class="settings-toggle" onclick="toggleUrl()">⚙️ Impostazioni</div>
-  <div id="url-bar">
-    <input type="url" id="script-url" placeholder="URL Apps Script (/exec)" autocomplete="off" autocorrect="off" spellcheck="false">
-    <button class="btn-sm" onclick="saveUrl()">Salva</button>
+
+  <div class="settings-toggle" onclick="toggleSettings()">⚙️ Impostazioni</div>
+  <div id="settings-panel">
+    <div class="setting-row">
+      <label>Chiave API Gemini</label>
+      <input type="password" id="gemini-key-input" placeholder="Incolla qui la chiave da aistudio.google.com" autocomplete="off">
+    </div>
+    <div class="setting-row">
+      <label>URL Apps Script</label>
+      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
 </main>
 <script>
@@ -131,66 +161,142 @@ const FIELDS = [
   {key:'shopper',label:'Shopper'},{key:'dpi',label:'DPI'},{key:'fatture',label:'Fatture'},
   {key:'scontrini',label:'Scont. annullati'},
 ];
-let imgB64=null, imgType='image/jpeg';
+let imgB64 = null, imgType = 'image/jpeg';
 
-window.addEventListener('load',()=>{
-  const saved = localStorage.getItem('gas_url');
-  document.getElementById('script-url').value = saved || DEFAULT_URL;
-  document.getElementById('date-input').value=new Date().toISOString().split('T')[0];
+window.addEventListener('load', () => {
+  document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
+  document.getElementById('script-url').value = localStorage.getItem('gas_url') || DEFAULT_URL;
+  document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+  checkKeyWarning();
 });
-function getUrl(){
-  return (localStorage.getItem('gas_url') || DEFAULT_URL).trim();
-}
-function toggleUrl(){ document.getElementById('url-bar').classList.toggle('show'); }
-function saveUrl(){const u=document.getElementById('script-url').value.trim();if(!u)return;localStorage.setItem('gas_url',u);toast('URL salvato ✓');document.getElementById('url-bar').classList.remove('show');}
 
-document.getElementById('file-input').addEventListener('change',function(e){
-  const f=e.target.files[0];if(!f)return;imgType=f.type||'image/jpeg';
-  const r=new FileReader();r.onload=ev=>{
-    document.getElementById('preview-img').src=ev.target.result;
-    document.getElementById('preview-container').style.display='block';
-    document.getElementById('upload-area').style.display='none';
-    document.getElementById('error-box').style.display='none';
-    imgB64=ev.target.result.split(',')[1];
-  };r.readAsDataURL(f);
-});
-async function analyzeImage(){
-  if(!imgB64)return;setStatus('Lettura scontrino con AI…');document.getElementById('analyze-btn').disabled=true;
-  try{
-    const resp=await fetch(getUrl(),{method:'POST',body:JSON.stringify({action:'analyze',imageBase64:imgB64,mediaType:imgType})});
-    const data=JSON.parse(await resp.text());
-    if(data.error)throw new Error(data.error);
-    hideStatus();renderResult(data);
-  }catch(err){hideStatus();showError(err.message);document.getElementById('analyze-btn').disabled=false;}
+function checkKeyWarning() {
+  document.getElementById('warn-banner').style.display = localStorage.getItem('gemini_key') ? 'none' : 'block';
 }
-function renderResult(data){
-  if(data.data)document.getElementById('date-input').value=data.data;
-  const c=document.getElementById('result-rows');c.innerHTML='';
-  FIELDS.forEach(f=>{
-    const v=data[f.key]||0;const row=document.createElement('div');row.className='result-row';
-    row.innerHTML=`<span class="row-label">${f.label}</span><input class="row-edit" id="f-${f.key}" type="text" inputmode="decimal" value="${v!==0?fmt(v):''}" placeholder="0" oninput="calcTotal()">`;
+function getKey() { return localStorage.getItem('gemini_key') || ''; }
+function getUrl() { return (localStorage.getItem('gas_url') || DEFAULT_URL).trim(); }
+
+function toggleSettings() { document.getElementById('settings-panel').classList.toggle('show'); }
+function openSettings()   { document.getElementById('settings-panel').classList.add('show'); document.getElementById('settings-panel').scrollIntoView({behavior:'smooth'}); }
+
+function saveSettings() {
+  const key = document.getElementById('gemini-key-input').value.trim();
+  const url = document.getElementById('script-url').value.trim();
+  if (key) localStorage.setItem('gemini_key', key);
+  if (url) localStorage.setItem('gas_url', url);
+  checkKeyWarning();
+  document.getElementById('settings-panel').classList.remove('show');
+  toast('Impostazioni salvate ✓');
+}
+
+document.getElementById('file-input').addEventListener('change', function(e) {
+  const f = e.target.files[0]; if (!f) return;
+  imgType = f.type || 'image/jpeg';
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('preview-img').src = ev.target.result;
+    document.getElementById('preview-container').style.display = 'block';
+    document.getElementById('upload-area').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+    imgB64 = ev.target.result.split(',')[1];
+  };
+  r.readAsDataURL(f);
+});
+
+async function analyzeImage() {
+  if (!imgB64) return;
+  const key = getKey();
+  if (!key) { openSettings(); return showError('Configura prima la chiave Gemini nelle impostazioni.'); }
+  setStatus('Lettura scontrino con AI…');
+  document.getElementById('analyze-btn').disabled = true;
+  try {
+    const prompt =
+      'Sei un assistente per una farmacia italiana. Analizza questo scontrino Z ' +
+      '(Rapporto Reparti Z) e restituisci SOLO un JSON valido.\n\n' +
+      'Reparti del registratore di cassa:\n' +
+      '01-USL/ASL: ricette SSN — può essere negativo per resi\n' +
+      '02-FARMACO: usa "AL NETTO DI SCONTI/MAGG.", NON il lordo\n' +
+      '03-PARAFARMACO: usa "AL NETTO DI SCONTI/MAGG.", NON il lordo\n' +
+      '04-VARIE: varie\n' +
+      '05-SERVIZI IVA 0: servizi esenti IVA (0 se assente)\n' +
+      '06-SERVIZI 22%/IVAti: servizi con IVA\n' +
+      'SHOPPER: sacchetti (0 se assente)\n' +
+      'DPI: dispositivi protezione individuale (0 se assente)\n' +
+      'FATTURE: fatture/note credito (0 se assente)\n' +
+      'Scontrini annullati: totale scontrini annullati (0 se assente)\n\n' +
+      'La DATA è in fondo allo scontrino, vicino a "DOC. GEST." o "CASSA" ' +
+      '(formato gg-mm-aaaa). NON usare la "DATA ULTIMO AZZERAMENTO".\n\n' +
+      'Restituisci SOLO questo JSON (valori numerici con punto decimale, 0 se assente):\n' +
+      '{"data":"YYYY-MM-DD","asl":0,"farmaco":0,"parafarmaco":0,"varie":0,' +
+      '"servizi0":0,"serviziIva":0,"shopper":0,"dpi":0,"fatture":0,"scontrini":0}';
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inline_data: { mime_type: imgType, data: imgB64 } },
+            { text: prompt }
+          ]}],
+          generationConfig: { maxOutputTokens: 512, temperature: 0 }
+        })
+      }
+    );
+    const rd = await resp.json();
+    if (rd.error) throw new Error('Gemini: ' + rd.error.message);
+    const text  = rd.candidates[0].content.parts[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Risposta AI non valida: ' + text.substring(0, 100));
+    hideStatus();
+    renderResult(JSON.parse(match[0]));
+  } catch(err) {
+    hideStatus(); showError(err.message);
+    document.getElementById('analyze-btn').disabled = false;
+  }
+}
+
+function renderResult(data) {
+  if (data.data) document.getElementById('date-input').value = data.data;
+  const c = document.getElementById('result-rows'); c.innerHTML = '';
+  FIELDS.forEach(f => {
+    const v = data[f.key] || 0;
+    const row = document.createElement('div'); row.className = 'result-row';
+    row.innerHTML = `<span class="row-label">${f.label}</span><input class="row-edit" id="f-${f.key}" type="text" inputmode="decimal" value="${v !== 0 ? fmt(v) : ''}" placeholder="0" oninput="calcTotal()">`;
     c.appendChild(row);
-  });calcTotal();document.getElementById('result-card').style.display='block';
+  });
+  calcTotal();
+  document.getElementById('result-card').style.display = 'block';
 }
-function fmt(n){return n?parseFloat(n).toFixed(2).replace('.',','):'';}
-function parse(s){return s?parseFloat(s.replace(',','.'))||0:0;}
-function calcTotal(){
-  let t=0;FIELDS.forEach(f=>{const el=document.getElementById('f-'+f.key);if(el)t+=parse(el.value);});
-  document.getElementById('total-display').textContent='€\u00a0'+t.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+function fmt(n)   { return n ? parseFloat(n).toFixed(2).replace('.', ',') : ''; }
+function parse(s) { return s ? parseFloat(s.replace(',', '.')) || 0 : 0; }
+
+function calcTotal() {
+  let t = 0;
+  FIELDS.forEach(f => { const el = document.getElementById('f-' + f.key); if (el) t += parse(el.value); });
+  document.getElementById('total-display').textContent = '€ ' + t.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
-async function writeToSheet(){
-  const date=document.getElementById('date-input').value;if(!date)return showError('Seleziona la data.');
-  const fields={};FIELDS.forEach(f=>{fields[f.key]=parse(document.getElementById('f-'+f.key)?.value);});
-  const note=document.getElementById('note-input').value.trim();
-  setStatus('Scrittura nel foglio…');document.getElementById('write-btn').disabled=true;
-  try{
-    const resp=await fetch(getUrl(),{method:'POST',body:JSON.stringify({action:'write',fields,date,note})});
-    const data=JSON.parse(await resp.text());
-    if(data.error)throw new Error(data.error);
-    hideStatus();document.getElementById('result-card').style.display='none';
-    document.getElementById('success-msg').style.display='block';
-    document.getElementById('success-detail').textContent=`${data.date} · ${data.tab} · Totale € ${fmt(data.total)}`;
-  }catch(err){hideStatus();showError(err.message);document.getElementById('write-btn').disabled=false;}
+
+async function writeToSheet() {
+  const date = document.getElementById('date-input').value;
+  if (!date) return showError('Seleziona la data.');
+  const fields = {}; FIELDS.forEach(f => { fields[f.key] = parse(document.getElementById('f-' + f.key)?.value); });
+  const note = document.getElementById('note-input').value.trim();
+  setStatus('Scrittura nel foglio…'); document.getElementById('write-btn').disabled = true;
+  try {
+    const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ fields, date, note }) });
+    const data = JSON.parse(await resp.text());
+    if (data.error) throw new Error(data.error);
+    hideStatus();
+    document.getElementById('result-card').style.display = 'none';
+    document.getElementById('success-msg').style.display = 'block';
+    document.getElementById('success-detail').textContent = `${data.date} · ${data.tab} · Totale € ${fmt(data.total)}`;
+  } catch(err) {
+    hideStatus(); showError(err.message);
+    document.getElementById('write-btn').disabled = false;
+  }
 }
 
 function setStatus(m) { document.getElementById('status-text').textContent = m; document.getElementById('status-box').style.display = 'block'; }
@@ -215,7 +321,6 @@ function toast(m) {
   Object.assign(t.style, {position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%)',background:'#222636',color:'#e8eaf0',padding:'10px 20px',borderRadius:'99px',fontSize:'13px',fontWeight:'600',zIndex:'999',border:'1px solid #2e3347'});
   document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
 }
-function toast(m){const t=document.createElement('div');t.textContent=m;Object.assign(t.style,{position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%)',background:'#222636',color:'#e8eaf0',padding:'10px 20px',borderRadius:'99px',fontSize:'13px',fontWeight:'600',zIndex:'999',border:'1px solid #2e3347'});document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
 </script>
 </body>
 </html>
