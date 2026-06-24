@@ -151,7 +151,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.5</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.6</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -241,25 +241,43 @@ async function analyzeImage() {
             { inline_data: { mime_type: imgType, data: imgB64 } },
             { text: prompt }
           ]}],
-          generationConfig: { maxOutputTokens: 1024, temperature: 0 }
+          generationConfig: {
+            maxOutputTokens: 1024,
+            temperature: 0,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'object',
+              properties: {
+                data:        { type: 'string' },
+                asl:         { type: 'number' },
+                farmaco:     { type: 'number' },
+                parafarmaco: { type: 'number' },
+                varie:       { type: 'number' },
+                servizi0:    { type: 'number' },
+                serviziIva:  { type: 'number' },
+                shopper:     { type: 'number' },
+                dpi:         { type: 'number' },
+                fatture:     { type: 'number' },
+                scontrini:   { type: 'number' }
+              },
+              required: ['data','asl','farmaco','parafarmaco','varie','servizi0','serviziIva','shopper','dpi','fatture','scontrini']
+            }
+          }
         })
       }
     );
     const rd = await resp.json();
     if (rd.error) throw new Error('Gemini: ' + rd.error.message);
-    const text = rd.candidates[0].content.parts[0].text.trim();
+    const raw = rd.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const text = raw.trim();
     let parsed;
-    const tryParse = s => {
-      try { return JSON.parse(s); } catch(_) {}
-      // fix unquoted keys: {data: 0} → {"data": 0}
-      const fixed = s.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
-      return JSON.parse(fixed);
-    };
-    try { parsed = tryParse(text); } catch(_) {
+    try {
+      parsed = JSON.parse(text);
+    } catch(e1) {
       const match = text.match(/\{[\s\S]*\}/);
-      const jsonStr = match ? match[0] : (text.includes('data') ? '{' + text + '}' : null);
-      if (!jsonStr) throw new Error('Risposta AI non valida: ' + text.substring(0, 150));
-      parsed = tryParse(jsonStr);
+      if (!match) throw new Error('Risposta non valida: ' + text.substring(0, 200));
+      try { parsed = JSON.parse(match[0]); }
+      catch(e2) { throw new Error('JSON non valido: ' + match[0].substring(0, 200)); }
     }
     hideStatus();
     renderResult(parsed);
