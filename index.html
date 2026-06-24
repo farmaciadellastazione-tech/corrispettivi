@@ -151,7 +151,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.4</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.5</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -249,11 +249,17 @@ async function analyzeImage() {
     if (rd.error) throw new Error('Gemini: ' + rd.error.message);
     const text = rd.candidates[0].content.parts[0].text.trim();
     let parsed;
-    try { parsed = JSON.parse(text); } catch(_) {
+    const tryParse = s => {
+      try { return JSON.parse(s); } catch(_) {}
+      // fix unquoted keys: {data: 0} → {"data": 0}
+      const fixed = s.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+      return JSON.parse(fixed);
+    };
+    try { parsed = tryParse(text); } catch(_) {
       const match = text.match(/\{[\s\S]*\}/);
-      const jsonStr = match ? match[0] : (text.includes('"data"') ? '{' + text + '}' : null);
-      if (!jsonStr) throw new Error('Risposta AI non valida: ' + text.substring(0, 120));
-      parsed = JSON.parse(jsonStr);
+      const jsonStr = match ? match[0] : (text.includes('data') ? '{' + text + '}' : null);
+      if (!jsonStr) throw new Error('Risposta AI non valida: ' + text.substring(0, 150));
+      parsed = tryParse(jsonStr);
     }
     hideStatus();
     renderResult(parsed);
