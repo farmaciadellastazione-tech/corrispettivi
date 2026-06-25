@@ -170,7 +170,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.1.8</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.1.9</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -300,9 +300,21 @@ async function analyzeImage() {
       parsed = JSON.parse(text);
     } catch(e1) {
       const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('Risposta non valida: ' + text.substring(0, 200));
-      try { parsed = JSON.parse(match[0]); }
-      catch(e2) { throw new Error('JSON non valido: ' + match[0].substring(0, 200)); }
+      if (match) {
+        try { parsed = JSON.parse(match[0]); }
+        catch(e2) { throw new Error('JSON non valido: ' + match[0].substring(0, 200)); }
+      } else {
+        // fallback: testo chiave-valore "data 2026 06 25 asl 0 farmaco 0 ..."
+        const kv = {};
+        const dateM = text.match(/data\s+(\d{4})[\s\-](\d{2})[\s\-](\d{2})/i);
+        if (dateM) kv.data = dateM[1] + '-' + dateM[2] + '-' + dateM[3];
+        ['asl','farmaco','parafarmaco','varie','servizi0','serviziIva','shopper','dpi','fatture','scontrini'].forEach(k => {
+          const m = text.match(new RegExp(k + '\\s+([\\d.,]+)', 'i'));
+          kv[k] = m ? parseFloat(m[1].replace(',', '.')) || 0 : 0;
+        });
+        if (!kv.data) throw new Error('Risposta non valida: ' + text.substring(0, 200));
+        parsed = kv;
+      }
     }
     hideStatus();
     renderResult(parsed);
