@@ -90,6 +90,10 @@
   .setting-row input:focus { border-color: var(--accent); }
   .btn-save { align-self: flex-end; background: var(--accent); border: none; border-radius: 8px; padding: 9px 18px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
   .btn-save:active { opacity: 0.85; }
+  #report-panel { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; flex-direction: column; gap: 10px; }
+  #report-panel.show { display: flex; }
+  .report-ok  { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--green); }
+  .report-err { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--red); }
 </style>
 </head>
 <body>
@@ -139,6 +143,16 @@
     <button class="btn-ghost" onclick="resetAll()">Nuovo scontrino</button>
   </div>
 
+  <div class="settings-toggle" onclick="toggleReport()">📤 Invia report mensile</div>
+  <div id="report-panel">
+    <div class="setting-row">
+      <label>Mese</label>
+      <input type="month" id="report-month" autocomplete="off">
+    </div>
+    <button class="btn-primary" id="report-btn" onclick="sendReport()">📤 Invia alla contabilità</button>
+    <div id="report-result" style="display:none"></div>
+  </div>
+
   <div class="settings-toggle" onclick="toggleSettings()">⚙️ Impostazioni</div>
   <div id="settings-panel">
     <div class="setting-row">
@@ -151,7 +165,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.0.6</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.1.0</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -168,6 +182,8 @@ window.addEventListener('load', () => {
   document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
   document.getElementById('script-url').value = localStorage.getItem('gas_url') || DEFAULT_URL;
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  document.getElementById('report-month').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   checkKeyWarning();
 });
 
@@ -177,6 +193,7 @@ function checkKeyWarning() {
 function getKey() { return localStorage.getItem('gemini_key') || ''; }
 function getUrl() { return (localStorage.getItem('gas_url') || DEFAULT_URL).trim(); }
 
+function toggleReport()   { document.getElementById('report-panel').classList.toggle('show'); }
 function toggleSettings() { document.getElementById('settings-panel').classList.toggle('show'); }
 function openSettings()   { document.getElementById('settings-panel').classList.add('show'); document.getElementById('settings-panel').scrollIntoView({behavior:'smooth'}); }
 
@@ -340,6 +357,32 @@ function resetAll() {
   document.getElementById('analyze-btn').disabled = false;
   document.getElementById('note-input').value = '';
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+}
+
+async function sendReport() {
+  const val = document.getElementById('report-month').value;
+  if (!val) return;
+  const [year, month] = val.split('-').map(Number);
+  const btn    = document.getElementById('report-btn');
+  const result = document.getElementById('report-result');
+  btn.disabled = true; result.style.display = 'none';
+  setStatus('Invio report in corso…');
+  try {
+    const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ action: 'sendReport', year, month }) });
+    const data = JSON.parse(await resp.text());
+    if (data.error) throw new Error(data.error);
+    hideStatus();
+    result.className = 'report-ok';
+    result.textContent = `✓ Report ${data.month} ${data.year} inviato (${data.rows} righe)`;
+    result.style.display = 'block';
+  } catch(err) {
+    hideStatus();
+    result.className = 'report-err';
+    result.textContent = '⚠️ ' + err.message;
+    result.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 if ('serviceWorker' in navigator) {
