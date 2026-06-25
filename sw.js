@@ -1,4 +1,4 @@
-const CACHE = 'scontrino-z-v7';
+const CACHE = 'scontrino-z-v8';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
