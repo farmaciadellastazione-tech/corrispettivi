@@ -34,6 +34,9 @@
   .upload-icon { font-size: 52px; display: block; margin-bottom: 14px; }
   .upload-area h2 { font-size: 19px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
   .upload-area p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .btn-camera { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; color: var(--muted); font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+  .btn-camera:active { background: var(--surface2); color: var(--text); }
+  #camera-input { display: none; }
 
   #preview-container { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
   #preview-img { width: 100%; max-height: 300px; object-fit: contain; background: #000; display: block; }
@@ -109,10 +112,15 @@
 
   <div class="upload-area" id="upload-area">
     <input type="file" id="file-input" accept="image/*">
-    <span class="upload-icon">📷</span>
-    <h2>Scatta lo scontrino Z</h2>
-    <p>Tocca per scegliere la foto<br>le ultime scattate appaiono subito</p>
+    <span class="upload-icon">🖼️</span>
+    <h2>Scegli dalla galleria</h2>
+    <p>Le ultime foto scattate appaiono subito</p>
   </div>
+
+  <label class="btn-camera" id="camera-btn" for="camera-input">
+    <input type="file" id="camera-input" accept="image/*" capture="environment">
+    📸 Scatta una nuova foto
+  </label>
 
   <div id="preview-container">
     <img id="preview-img" alt="Scontrino">
@@ -165,7 +173,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.1.5</div>
+  <div style="text-align:center;font-size:10px;color:var(--muted);padding:8px 0 2px">v1.1.6</div>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -207,7 +215,7 @@ function saveSettings() {
   toast('Impostazioni salvate ✓');
 }
 
-document.getElementById('file-input').addEventListener('change', function(e) {
+function handleFile(e) {
   const f = e.target.files[0]; if (!f) return;
   imgType = f.type || 'image/jpeg';
   const r = new FileReader();
@@ -215,11 +223,14 @@ document.getElementById('file-input').addEventListener('change', function(e) {
     document.getElementById('preview-img').src = ev.target.result;
     document.getElementById('preview-container').style.display = 'block';
     document.getElementById('upload-area').style.display = 'none';
+    document.getElementById('camera-btn').style.display = 'none';
     document.getElementById('error-box').style.display = 'none';
     imgB64 = ev.target.result.split(',')[1];
   };
   r.readAsDataURL(f);
-});
+}
+document.getElementById('file-input').addEventListener('change', handleFile);
+document.getElementById('camera-input').addEventListener('change', handleFile);
 
 async function analyzeImage() {
   if (!imgB64) return;
@@ -351,8 +362,9 @@ function hideStatus()  { document.getElementById('status-box').style.display = '
 function showError(m)  { const el = document.getElementById('error-box'); el.textContent = '⚠️ ' + m; el.style.display = 'block'; el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
 
 function resetAll() {
-  imgB64 = null; document.getElementById('file-input').value = '';
+  imgB64 = null; document.getElementById('file-input').value = ''; document.getElementById('camera-input').value = '';
   document.getElementById('upload-area').style.display = '';
+  document.getElementById('camera-btn').style.display = '';
   ['preview-container','result-card','status-box','success-msg','error-box'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('analyze-btn').disabled = false;
   document.getElementById('note-input').value = '';
