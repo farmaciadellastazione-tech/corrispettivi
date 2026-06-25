@@ -43,15 +43,16 @@ function writeToSheet(fields, dateStr, note) {
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
   const F     = fields;
-  const vals  = [F.asl, F.farmaco, F.parafarmaco, F.varie, F.servizi0, F.serviziIva, F.shopper, F.dpi, F.fatture, F.scontrini];
-  const total = vals.reduce((s, v) => s + (parseFloat(v) || 0), 0);
+  const total = [F.asl, F.farmaco, F.parafarmaco, F.varie, F.servizi0, F.serviziIva, F.shopper, F.dpi, F.fatture]
+                .reduce((s, v) => s + (parseFloat(v) || 0), 0) - (parseFloat(F.scontrini) || 0);
 
-  sheet.getRange(targetRow, 1, 1, 13).setValues([[
+  sheet.getRange(targetRow, 1, 1, 11).setValues([[
     label,
     n(F.asl), n(F.farmaco), n(F.parafarmaco), n(F.varie),
-    n(F.servizi0), n(F.serviziIva), n(F.shopper), n(F.dpi), n(F.fatture), n(F.scontrini),
-    total, note
+    n(F.servizi0), n(F.serviziIva), n(F.shopper), n(F.dpi), n(F.fatture), n(F.scontrini)
   ]]);
+  sheet.getRange(targetRow, 12).setFormula(`=SUM(B${targetRow}:J${targetRow})-K${targetRow}`);
+  sheet.getRange(targetRow, 13).setValue(note);
 
   return { date: label, tab: monthName, total: total };
 }

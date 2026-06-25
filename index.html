@@ -342,7 +342,11 @@ function parse(s) { return s ? parseFloat(s.replace(',', '.')) || 0 : 0; }
 
 function calcTotal() {
   let t = 0;
-  FIELDS.forEach(f => { const el = document.getElementById('f-' + f.key); if (el) t += parse(el.value); });
+  FIELDS.forEach(f => {
+    const el = document.getElementById('f-' + f.key);
+    if (!el) return;
+    t += f.key === 'scontrini' ? -parse(el.value) : parse(el.value);
+  });
   document.getElementById('total-display').textContent = '€ ' + t.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
