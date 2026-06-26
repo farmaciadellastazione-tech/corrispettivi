@@ -27,6 +27,7 @@
 
   .warn-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--amber); cursor: pointer; }
   .warn-banner strong { display: block; margin-bottom: 2px; font-size: 14px; }
+  #result-card .warn-banner { margin: 8px 12px 0; border-radius: 8px; cursor: default; }
 
   .btn-camera { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 16px; padding: 44px 20px; color: #fff; font-size: 19px; font-weight: 700; cursor: pointer; width: 100%; text-align: center; }
   .btn-camera:active { opacity: 0.85; }
@@ -133,6 +134,8 @@
   <div id="result-card">
     <div class="result-header"><h3>Dati estratti — verifica</h3><span class="badge badge-amber">Controlla</span></div>
     <div class="date-row"><span>Data</span><input type="date" id="date-input"></div>
+    <div id="warn-date" class="warn-banner" style="display:none"><strong>⚠️ Data diversa da oggi</strong>Lo scontrino riporta una data diversa — controlla se è stato battuto dopo la mezzanotte.</div>
+    <div id="warn-overwrite" class="warn-banner" style="display:none"><strong>⚠️ Dati precedenti sostituiti</strong>La nuova analisi ha sovrascritto i valori già presenti.</div>
     <div id="result-rows"></div>
     <div class="note-section"><label for="note-input">Note</label><textarea id="note-input" rows="2" placeholder="es. n1/PA, bilancia…"></textarea></div>
     <div class="total-row"><span class="total-label">Totale reparti</span><span class="total-value" id="total-display">€ 0,00</span></div>
@@ -329,7 +332,15 @@ async function analyzeImage() {
 }
 
 function renderResult(data) {
+  const card = document.getElementById('result-card');
+  const alreadyFilled = card.style.display === 'block' &&
+    Array.from(document.querySelectorAll('.row-edit')).some(el => el.value.trim() !== '');
+  document.getElementById('warn-overwrite').style.display = alreadyFilled ? 'block' : 'none';
+
   if (data.data) document.getElementById('date-input').value = data.data;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('warn-date').style.display = (data.data && data.data !== today) ? 'block' : 'none';
+
   const c = document.getElementById('result-rows'); c.innerHTML = '';
   FIELDS.forEach(f => {
     const v = data[f.key] || 0;
