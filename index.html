@@ -240,7 +240,10 @@ async function analyzeImage() {
       'Sei un assistente per una farmacia italiana. Analizza questo scontrino Z ' +
       '(Rapporto Reparti Z) e restituisci SOLO un JSON valido.\n\n' +
       'Reparti del registratore di cassa:\n' +
-      '01-USL/ASL: ricette SSN — può essere negativo per resi\n' +
+      '01-USL/ASL: ricette SSN — SEMPRE un numero positivo → campo "asl"\n' +
+      '   ATTENZIONE: in quello stesso spazio può comparire uno scontrino annullato\n' +
+      '   (valore NEGATIVO). In quel caso metti il valore assoluto (positivo) in\n' +
+      '   "scontrini", non in "asl". "asl" deve essere sempre ≥ 0.\n' +
       '02-FARMACO: usa "AL NETTO DI SCONTI/MAGG.", NON il lordo\n' +
       '03-PARAFARMACO: usa "AL NETTO DI SCONTI/MAGG.", NON il lordo\n' +
       '04-VARIE: varie\n' +
@@ -249,7 +252,8 @@ async function analyzeImage() {
       'SHOPPER: sacchetti (0 se assente)\n' +
       'DPI: dispositivi protezione individuale (0 se assente)\n' +
       'FATTURE: fatture/note credito (0 se assente)\n' +
-      'Scontrini annullati: totale scontrini annullati (0 se assente)\n\n' +
+      'Scontrini annullati: valore assoluto (positivo) degli scontrini annullati\n' +
+      '   (0 se assente). NB: il foglio li sottrae già automaticamente.\n\n' +
       'La DATA è in fondo allo scontrino, vicino a "DOC. GEST." o "CASSA" ' +
       '(formato gg-mm-aaaa). NON usare la "DATA ULTIMO AZZERAMENTO".\n\n' +
       'Restituisci SOLO questo JSON (valori numerici con punto decimale, 0 se assente):\n' +
