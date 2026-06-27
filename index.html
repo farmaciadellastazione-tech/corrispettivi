@@ -109,6 +109,10 @@
     Tocca qui → Impostazioni per inserirla.
   </div>
 
+  <button id="install-btn" onclick="installApp()" style="display:none;width:100%;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 20px;color:var(--accent);font-size:17px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:10px;">
+    📲 Aggiungi alla schermata Home
+  </button>
+
   <label class="btn-camera" id="upload-area">
     <input type="file" id="file-input" accept="image/*" capture="environment">
     <span class="upload-icon">📷</span>
@@ -174,6 +178,7 @@
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
   <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.2.2</div>
+  <button onclick="window.close()" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">✕ Chiudi app</button>
 </main>
 <script>
 const DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbxTTcAb_3BKOzGnjsTTjSj1rkVRlalzQo2lfip9EOROl_y6yWU_aMXwGsaA7dJC-z5uRA/exec';
@@ -427,6 +432,22 @@ async function sendReport() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('install-btn').style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.getElementById('install-btn').style.display = 'none';
+});
+function installApp() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => { deferredInstallPrompt = null; document.getElementById('install-btn').style.display = 'none'; });
 }
 
 function toast(m) {
