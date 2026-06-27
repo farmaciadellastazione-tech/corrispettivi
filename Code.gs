@@ -135,10 +135,10 @@ function writeFattura(req) {
   if (!sheet) throw new Error('Tab "' + monthName + '" non trovato nel foglio');
 
   const label = formatLabel(date);
-  const rows  = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
+  const rows  = sheet.getRange(1, 1, sheet.getLastRow(), 1).getDisplayValues();
   let targetRow = -1;
   for (let i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]).trim() === label) { targetRow = i + 1; break; }
+    if (rows[i][0].trim() === label) { targetRow = i + 1; break; }
   }
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
