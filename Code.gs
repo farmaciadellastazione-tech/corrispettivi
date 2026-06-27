@@ -123,35 +123,35 @@ function triggerEndOfMonth() {
 }
 
 function writeFattura(req) {
-  const date = new Date((req.data || new Date().toISOString().split('T')[0]) + 'T12:00:00');
-  const year = date.getFullYear();
-  const ssId = FOGLI[year];
+  const date      = new Date((req.data || new Date().toISOString().split('T')[0]) + 'T12:00:00');
+  const year      = date.getFullYear();
+  const ssId      = FOGLI[year];
   if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
-  const ss    = SpreadsheetApp.openById(ssId);
-  const sheet = ss.getSheetByName('Fatture');
-  if (!sheet) throw new Error('Tab "Fatture" non trovato nel foglio');
-  const importo = parseFloat(req.importo) || 0;
-  const nota    = req.note || '';
-  const rows    = sheet.getDataRange().getValues();
+
+  const ss        = SpreadsheetApp.openById(ssId);
+  const monthName = MONTH_NAMES[date.getMonth()];
+  const sheet     = ss.getSheetByName(monthName);
+  if (!sheet) throw new Error('Tab "' + monthName + '" non trovato nel foglio');
+
+  const label = formatLabel(date);
+  const rows  = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
   let targetRow = -1;
   for (let i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]) === req.data) { targetRow = i + 1; break; }
+    if (String(rows[i][0]).trim() === label) { targetRow = i + 1; break; }
   }
+  if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
-  let dailyTotal;
-  if (targetRow > 0) {
-    const existing = parseFloat(rows[targetRow - 1][1]) || 0;
-    const existingNote = String(rows[targetRow - 1][2] || '');
-    dailyTotal = existing + importo;
-    const newNote = existingNote ? existingNote + ' · ' + nota : nota;
-    sheet.getRange(targetRow, 2).setValue(dailyTotal);
-    sheet.getRange(targetRow, 3).setValue(newNote);
-  } else {
-    sheet.appendRow([req.data, importo, nota]);
-    dailyTotal = importo;
-  }
+  const importo       = parseFloat(req.importo) || 0;
+  const nota          = req.note || '';
+  const existingFatt  = parseFloat(sheet.getRange(targetRow, 10).getValue()) || 0;
+  const existingNote  = String(sheet.getRange(targetRow, 13).getValue() || '');
+  const newFatture    = existingFatt + importo;
+  const newNote       = existingNote ? existingNote + (nota ? ' · ' + nota : '') : nota;
 
-  return { ok: true, data: req.data, dailyTotal: dailyTotal };
+  sheet.getRange(targetRow, 10).setValue(newFatture);
+  if (nota || existingNote) sheet.getRange(targetRow, 13).setValue(newNote);
+
+  return { ok: true, data: label, dailyTotal: newFatture };
 }
 
 function formatLabel(date) {
