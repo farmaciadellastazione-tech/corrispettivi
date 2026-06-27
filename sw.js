@@ -1,5 +1,5 @@
-const CACHE = 'scontrino-z-v17';
-const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE = 'scontrino-z-v18';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
