@@ -130,11 +130,26 @@ function writeFattura(req) {
   const ss    = SpreadsheetApp.openById(ssId);
   const sheet = ss.getSheetByName('Fatture');
   if (!sheet) throw new Error('Tab "Fatture" non trovato nel foglio');
-  sheet.appendRow([req.data, parseFloat(req.importo) || 0, req.note || '']);
+  const importo = parseFloat(req.importo) || 0;
+  const nota    = req.note || '';
+  const rows    = sheet.getDataRange().getValues();
+  let targetRow = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) === req.data) { targetRow = i + 1; break; }
+  }
 
-  // somma tutte le righe di quel giorno
-  const rows = sheet.getDataRange().getValues();
-  const dailyTotal = rows.reduce((s, r) => String(r[0]) === req.data ? s + (parseFloat(r[1]) || 0) : s, 0);
+  let dailyTotal;
+  if (targetRow > 0) {
+    const existing = parseFloat(rows[targetRow - 1][1]) || 0;
+    const existingNote = String(rows[targetRow - 1][2] || '');
+    dailyTotal = existing + importo;
+    const newNote = existingNote ? existingNote + ' · ' + nota : nota;
+    sheet.getRange(targetRow, 2).setValue(dailyTotal);
+    sheet.getRange(targetRow, 3).setValue(newNote);
+  } else {
+    sheet.appendRow([req.data, importo, nota]);
+    dailyTotal = importo;
+  }
 
   return { ok: true, data: req.data, dailyTotal: dailyTotal };
 }
