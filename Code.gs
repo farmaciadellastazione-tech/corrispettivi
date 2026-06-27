@@ -123,8 +123,9 @@ function triggerEndOfMonth() {
 }
 
 function writeFattura(req) {
-  const date      = new Date((req.data || new Date().toISOString().split('T')[0]) + 'T12:00:00');
-  const year      = date.getFullYear();
+  const dateStr   = req.data || new Date().toISOString().split('T')[0];
+  const year      = parseInt(dateStr.split('-')[0], 10);
+  const date      = new Date(dateStr + 'T12:00:00');
   const ssId      = FOGLI[year];
   if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
 
