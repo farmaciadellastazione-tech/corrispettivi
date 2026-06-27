@@ -11,7 +11,8 @@ const COL_HEADERS     = ['Data','ASL','Farmaco','Parafarmaco','Varie','Servizi 0
 function doPost(e) {
   try {
     const req = JSON.parse(e.postData.contents);
-    if (req.action === 'sendReport') return out(sendMonthReport(req.year, req.month));
+    if (req.action === 'sendReport')   return out(sendMonthReport(req.year, req.month));
+    if (req.action === 'writeFattura') return out(writeFattura(req));
     return out(writeToSheet(req.fields, req.date, req.note || ''));
   } catch(err) {
     return out({ error: err.message });
@@ -119,6 +120,18 @@ function triggerEndOfMonth() {
   } catch(err) {
     MailApp.sendEmail(RECIPIENT_EMAIL, 'Errore invio corrispettivi automatico ' + year, 'Errore: ' + err.message);
   }
+}
+
+function writeFattura(req) {
+  const date = new Date((req.data || new Date().toISOString().split('T')[0]) + 'T12:00:00');
+  const year = date.getFullYear();
+  const ssId = FOGLI[year];
+  if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
+  const ss    = SpreadsheetApp.openById(ssId);
+  const sheet = ss.getSheetByName('Fatture');
+  if (!sheet) throw new Error('Tab "Fatture" non trovato nel foglio');
+  sheet.appendRow([req.data, parseFloat(req.importo) || 0, req.note || '']);
+  return { ok: true, data: req.data, numero: req.numero };
 }
 
 function formatLabel(date) {

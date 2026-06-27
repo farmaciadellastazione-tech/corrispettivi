@@ -96,6 +96,8 @@
   #report-panel.show { display: flex; }
   .report-ok  { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; padding: 12px 14px; font-size: 15px; color: var(--green); }
   .report-err { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 12px 14px; font-size: 15px; color: var(--red); }
+  #fattura-panel { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; flex-direction: column; gap: 12px; }
+  #fattura-panel.show { display: flex; }
 </style>
 </head>
 <body>
@@ -155,6 +157,24 @@
     <button class="btn-ghost" onclick="resetAll()">Nuovo scontrino</button>
   </div>
 
+  <div class="settings-toggle" onclick="toggleFattura()">📄 Fattura attiva</div>
+  <div id="fattura-panel">
+    <div class="setting-row">
+      <label>Data</label>
+      <input type="date" id="fat-data" autocomplete="off">
+    </div>
+    <div class="setting-row">
+      <label>Importo (€)</label>
+      <input type="text" id="fat-importo" placeholder="0,00" inputmode="decimal" autocomplete="off">
+    </div>
+    <div class="setting-row">
+      <label>Note (n. fattura, tipo, cliente…)</label>
+      <input type="text" id="fat-note" placeholder="es. n.42 PA Comune di…" autocomplete="off">
+    </div>
+    <button class="btn-primary" id="fat-btn" onclick="registraFattura()">📄 Registra fattura</button>
+    <div id="fat-result" style="display:none"></div>
+  </div>
+
   <div class="settings-toggle" onclick="toggleReport()">📤 Invia report mensile</div>
   <div id="report-panel">
     <div class="setting-row">
@@ -195,6 +215,7 @@ window.addEventListener('load', () => {
   document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
   document.getElementById('script-url').value = localStorage.getItem('gas_url') || DEFAULT_URL;
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fat-data').value = new Date().toISOString().split('T')[0];
   const now = new Date();
   document.getElementById('report-month').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   checkKeyWarning();
@@ -206,6 +227,7 @@ function checkKeyWarning() {
 function getKey() { return localStorage.getItem('gemini_key') || ''; }
 function getUrl() { return (localStorage.getItem('gas_url') || DEFAULT_URL).trim(); }
 
+function toggleFattura()  { document.getElementById('fattura-panel').classList.toggle('show'); }
 function toggleReport()   { document.getElementById('report-panel').classList.toggle('show'); }
 function toggleSettings() { document.getElementById('settings-panel').classList.toggle('show'); }
 function openSettings()   { document.getElementById('settings-panel').classList.add('show'); document.getElementById('settings-panel').scrollIntoView({behavior:'smooth'}); }
@@ -402,6 +424,36 @@ function resetAll() {
   document.getElementById('analyze-btn').disabled = false;
   document.getElementById('note-input').value = '';
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+}
+
+async function registraFattura() {
+  const data    = document.getElementById('fat-data').value;
+  const importo = document.getElementById('fat-importo').value.replace(',', '.');
+  if (!data || !importo || isNaN(parseFloat(importo))) return;
+  const note    = document.getElementById('fat-note').value.trim();
+  const btn     = document.getElementById('fat-btn');
+  const result  = document.getElementById('fat-result');
+  btn.disabled  = true; result.style.display = 'none';
+  setStatus('Registrazione fattura…');
+  try {
+    const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ action: 'writeFattura', data, importo: parseFloat(importo), note }) });
+    const res  = JSON.parse(await resp.text());
+    if (res.error) throw new Error(res.error);
+    hideStatus();
+    result.className = 'report-ok';
+    result.textContent = '✓ Fattura registrata — ' + data + ' € ' + parseFloat(importo).toFixed(2).replace('.', ',');
+    result.style.display = 'block';
+    document.getElementById('fat-importo').value = '';
+    document.getElementById('fat-note').value = '';
+    document.getElementById('fat-data').value = new Date().toISOString().split('T')[0];
+  } catch(err) {
+    hideStatus();
+    result.className = 'report-err';
+    result.textContent = '⚠️ ' + err.message;
+    result.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function sendReport() {
