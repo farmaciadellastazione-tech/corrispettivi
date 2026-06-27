@@ -131,7 +131,12 @@ function writeFattura(req) {
   const sheet = ss.getSheetByName('Fatture');
   if (!sheet) throw new Error('Tab "Fatture" non trovato nel foglio');
   sheet.appendRow([req.data, parseFloat(req.importo) || 0, req.note || '']);
-  return { ok: true, data: req.data, numero: req.numero };
+
+  // somma tutte le righe di quel giorno
+  const rows = sheet.getDataRange().getValues();
+  const dailyTotal = rows.reduce((s, r) => String(r[0]) === req.data ? s + (parseFloat(r[1]) || 0) : s, 0);
+
+  return { ok: true, data: req.data, dailyTotal: dailyTotal };
 }
 
 function formatLabel(date) {

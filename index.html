@@ -441,7 +441,7 @@ async function registraFattura() {
     if (res.error) throw new Error(res.error);
     hideStatus();
     result.className = 'report-ok';
-    result.textContent = '✓ Fattura registrata — ' + data + ' € ' + parseFloat(importo).toFixed(2).replace('.', ',');
+    result.textContent = '✓ Registrata — totale ' + data + ': € ' + (res.dailyTotal || 0).toFixed(2).replace('.', ',');
     result.style.display = 'block';
     document.getElementById('fat-importo').value = '';
     document.getElementById('fat-note').value = '';
