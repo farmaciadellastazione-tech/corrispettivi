@@ -24,6 +24,19 @@ function out(obj) {
          .setMimeType(ContentService.MimeType.JSON);
 }
 
+function findDateRow(sheet, label, date) {
+  const rows = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
+  for (let i = 0; i < rows.length; i++) {
+    const val = rows[i][0];
+    if (val instanceof Date) {
+      if (val.getDate() === date.getDate() && val.getMonth() === date.getMonth()) return i + 1;
+    } else if (String(val).trim() === label) {
+      return i + 1;
+    }
+  }
+  return -1;
+}
+
 function writeToSheet(fields, dateStr, note) {
   const date      = new Date(dateStr + 'T12:00:00');
   const year      = date.getFullYear();
@@ -35,12 +48,8 @@ function writeToSheet(fields, dateStr, note) {
   const sheet     = ss.getSheetByName(monthName);
   if (!sheet) throw new Error('Tab "' + monthName + '" non trovato');
 
-  const label = formatLabel(date);
-  const rows  = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
-  let targetRow = -1;
-  for (let i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]).trim() === label) { targetRow = i + 1; break; }
-  }
+  const label     = formatLabel(date);
+  const targetRow = findDateRow(sheet, label, date);
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
   const F     = fields;
@@ -134,12 +143,8 @@ function writeFattura(req) {
   const sheet     = ss.getSheetByName(monthName);
   if (!sheet) throw new Error('Tab "' + monthName + '" non trovato nel foglio');
 
-  const label = formatLabel(date);
-  const rows  = sheet.getRange(1, 1, sheet.getLastRow(), 1).getDisplayValues();
-  let targetRow = -1;
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i][0].trim() === label) { targetRow = i + 1; break; }
-  }
+  const label     = formatLabel(date);
+  const targetRow = findDateRow(sheet, label, date);
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
   const importo       = parseFloat(req.importo) || 0;
