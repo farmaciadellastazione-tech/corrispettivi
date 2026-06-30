@@ -197,7 +197,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.1</div>
+  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.2</div>
   <button onclick="window.close()" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">✕ Chiudi app</button>
 </main>
 <script>
@@ -301,9 +301,10 @@ async function analyzeImage() {
             { text: prompt }
           ]}],
           generationConfig: {
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
             temperature: 0,
             responseMimeType: 'application/json',
+            thinkingConfig: { thinkingBudget: 0 },
             responseSchema: {
               type: 'object',
               properties: {
@@ -327,7 +328,10 @@ async function analyzeImage() {
     );
     const rd = await resp.json();
     if (rd.error) throw new Error('Gemini: ' + rd.error.message);
-    const raw = rd.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const candidate = rd.candidates?.[0];
+    if (!candidate) throw new Error('Nessuna risposta da Gemini');
+    const finishReason = candidate.finishReason ?? 'STOP';
+    const raw = (candidate.content?.parts ?? []).map(p => p.text ?? '').join('');
     const text = raw.trim();
     let parsed;
     try {
@@ -337,6 +341,11 @@ async function analyzeImage() {
       if (match) {
         try { parsed = JSON.parse(match[0]); }
         catch(e2) { throw new Error('JSON non valido: ' + match[0].substring(0, 200)); }
+      } else if (text.startsWith('{')) {
+        // JSON troncato — tenta riparazione rimuovendo l'ultimo campo incompleto
+        const repaired = text.replace(/,?\s*"[^"]*"\s*:\s*[^,{}\]]*$/, '') + '}';
+        try { parsed = JSON.parse(repaired); }
+        catch(e3) { throw new Error((finishReason !== 'STOP' ? 'Risposta interrotta (' + finishReason + '): ' : 'Risposta non valida: ') + text.substring(0, 200)); }
       } else {
         // fallback: testo chiave-valore "data 2026 06 25 asl 0 farmaco 0 ..."
         const kv = {};
