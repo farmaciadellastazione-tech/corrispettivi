@@ -37,6 +37,15 @@ function findDateRow(sheet, label, date) {
   return -1;
 }
 
+// Restituisce la label "gio 12/06" per una cella di colonna A, sia che contenga
+// un oggetto Date (riga mai passata da writeToSheet, es. solo fattura) sia testo.
+// Torna null se la cella non è una riga-data valida (es. intestazioni, righe vuote).
+function rowLabel(val) {
+  if (val instanceof Date) return formatLabel(val);
+  const s = String(val).trim();
+  return /^[a-z]{3}\s\d{2}\/\d{2}$/.test(s) ? s : null;
+}
+
 function writeToSheet(fields, dateStr, note) {
   const date      = new Date(dateStr + 'T12:00:00');
   const year      = date.getFullYear();
@@ -79,7 +88,11 @@ function sendMonthReport(year, month) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 1) throw new Error('Nessun dato nel tab ' + monthName);
   const data = sheet.getRange(1, 1, lastRow, 13).getValues();
-  const rows = data.filter(r => /^[a-z]{3}\s\d{2}\/\d{2}$/.test(String(r[0]).trim()));
+  const rows = [];
+  data.forEach(r => {
+    const label = rowLabel(r[0]);
+    if (label !== null) rows.push([label, ...r.slice(1)]);
+  });
   if (rows.length === 0) throw new Error('Nessuna riga con dati trovata per ' + monthName + ' ' + year);
 
   // CSV con BOM per Excel
