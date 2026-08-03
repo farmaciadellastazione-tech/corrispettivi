@@ -61,14 +61,21 @@ function writeToSheet(fields, dateStr, note) {
   const targetRow = findDateRow(sheet, label, date);
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
+  // Se lo scontrino non è mai stato registrato per questo giorno (cella A ancora
+  // un oggetto Date, non un'etichetta testuale), preserva un'eventuale fattura
+  // già inserita a mano ("fattura attiva") sommandola invece di sovrascriverla.
+  const isFirstEntry = sheet.getRange(targetRow, 1).getValue() instanceof Date;
+  const existingFatt = isFirstEntry ? (parseFloat(sheet.getRange(targetRow, 10).getValue()) || 0) : 0;
+  const fatture      = existingFatt + (parseFloat(fields.fatture) || 0);
+
   const F     = fields;
-  const total = [F.asl, F.farmaco, F.parafarmaco, F.varie, F.servizi0, F.serviziIva, F.shopper, F.dpi, F.fatture]
-                .reduce((s, v) => s + (parseFloat(v) || 0), 0) - (parseFloat(F.scontrini) || 0);
+  const total = [F.asl, F.farmaco, F.parafarmaco, F.varie, F.servizi0, F.serviziIva, F.shopper, F.dpi]
+                .reduce((s, v) => s + (parseFloat(v) || 0), 0) + fatture - (parseFloat(F.scontrini) || 0);
 
   sheet.getRange(targetRow, 1, 1, 11).setValues([[
     label,
     n(F.asl), n(F.farmaco), n(F.parafarmaco), n(F.varie),
-    n(F.servizi0), n(F.serviziIva), n(F.shopper), n(F.dpi), n(F.fatture), n(F.scontrini)
+    n(F.servizi0), n(F.serviziIva), n(F.shopper), n(F.dpi), n(fatture), n(F.scontrini)
   ]]);
   sheet.getRange(targetRow, 12).setFormula(`=SUM(B${targetRow}:J${targetRow})-K${targetRow}`);
   sheet.getRange(targetRow, 13).setValue(note);
