@@ -61,10 +61,12 @@ function writeToSheet(fields, dateStr, note) {
   const targetRow = findDateRow(sheet, label, date);
   if (targetRow < 0) throw new Error('Data "' + label + '" non trovata nel tab ' + monthName);
 
-  // Se lo scontrino non è mai stato registrato per questo giorno (cella A ancora
-  // un oggetto Date, non un'etichetta testuale), preserva un'eventuale fattura
-  // già inserita a mano ("fattura attiva") sommandola invece di sovrascriverla.
-  const isFirstEntry = sheet.getRange(targetRow, 1).getValue() instanceof Date;
+  // Se lo scontrino non è mai stato registrato per questo giorno (colonne B–I e K
+  // tutte vuote), preserva un'eventuale fattura già inserita a mano ("fattura
+  // attiva") sommandola invece di sovrascriverla. Non si guarda la colonna A:
+  // la data può essere sia un oggetto Date sia già un'etichetta testuale.
+  const rowVals      = sheet.getRange(targetRow, 1, 1, 11).getValues()[0];
+  const isFirstEntry = [1,2,3,4,5,6,7,8,10].every(i => !(parseFloat(rowVals[i]) || 0));
   const existingFatt = isFirstEntry ? (parseFloat(sheet.getRange(targetRow, 10).getValue()) || 0) : 0;
   const fatture      = existingFatt + (parseFloat(fields.fatture) || 0);
 
