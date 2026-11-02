@@ -197,7 +197,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.5</div>
+  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.8</div>
   <button onclick="window.close()" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">✕ Chiudi app</button>
 </main>
 <script>
@@ -210,6 +210,7 @@ const FIELDS = [
   {key:'scontrini',label:'Scont. annullati'},
 ];
 let imgB64 = null, imgType = 'image/jpeg';
+let writing = false;
 
 window.addEventListener('load', () => {
   document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
@@ -385,6 +386,7 @@ function renderResult(data) {
     c.appendChild(row);
   });
   calcTotal();
+  document.getElementById('write-btn').disabled = writing;
   document.getElementById('result-card').style.display = 'block';
 }
 
@@ -406,6 +408,8 @@ async function writeToSheet() {
   if (!date) return showError('Seleziona la data.');
   const fields = {}; FIELDS.forEach(f => { fields[f.key] = parse(document.getElementById('f-' + f.key)?.value); });
   const note = document.getElementById('note-input').value.trim();
+  if (writing) return;  // un salvataggio è già in corso: niente doppio invio
+  writing = true;
   setStatus('Scrittura nel foglio…'); document.getElementById('write-btn').disabled = true;
   try {
     const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ fields, date, note }) });
@@ -418,6 +422,8 @@ async function writeToSheet() {
   } catch(err) {
     hideStatus(); showError(err.message);
     document.getElementById('write-btn').disabled = false;
+  } finally {
+    writing = false;
   }
 }
 
@@ -431,6 +437,7 @@ function resetAll() {
   document.getElementById('file-btn').style.display = '';
   ['preview-container','result-card','status-box','success-msg','error-box'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('write-btn').disabled = writing;
   document.getElementById('note-input').value = '';
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
 }
