@@ -186,12 +186,14 @@ function writeFattura(req) {
 // Riparazione una tantum delle date in colonna A (bug dei martedì letti come marzo).
 // Per ogni tab mensile riscrive come TESTO l'etichetta corretta "gg dd/mm" di ogni
 // riga-giorno, partendo dalla riga sotto l'intestazione "Data". Tocca solo la colonna A.
+// Prima controlla TUTTI i tab (ogni riga deve essere proprio il giorno atteso, o il
+// martedì corrotto in marzo di quel giorno): al primo errore si ferma senza scrivere nulla.
 function riparaDate(year) {
   year = year || 2026;
   const ssId = FOGLI[year];
   if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
   const ss = SpreadsheetApp.openById(ssId);
-  const report = [];
+  const report = [], plans = [];
   MONTH_NAMES.forEach((monthName, m) => {
     const sheet = ss.getSheetByName(monthName);
     if (!sheet) { report.push(monthName + ': tab non trovato'); return; }
@@ -200,18 +202,26 @@ function riparaDate(year) {
     if (header < 0) { report.push(monthName + ': intestazione "Data" non trovata'); return; }
     const days   = new Date(year, m + 1, 0).getDate();
     const labels = [];
+    let fixed = 0;
     for (let d = 1; d <= days; d++) {
       const cur = colA[header + d];
-      if (!(cur instanceof Date) && rowLabel(cur) === null) {
-        throw new Error(monthName + ' riga ' + (header + d + 1) + ': valore inatteso "' + cur + '", nessuna modifica al tab');
+      const exp = formatLabel(new Date(year, m, d, 12));
+      const corrupted = cur instanceof Date && cur.getMonth() === 2 && cur.getDate() === d &&
+                        cur.getFullYear() === 2000 + m + 1 && m !== 2;
+      if (!corrupted && rowLabel(cur) !== exp) {
+        throw new Error(monthName + ' riga ' + (header + d + 1) + ': atteso "' + exp + '", trovato "' + cur +
+                        '". Nessuna modifica al foglio.');
       }
-      labels.push([formatLabel(new Date(year, m, d, 12))]);
+      if (corrupted) fixed++;
+      labels.push([exp]);
     }
-    const changed = labels.filter((l, i) => colA[header + 1 + i] !== l[0]).length;
-    const range = sheet.getRange(header + 2, 1, days, 1);
+    plans.push({ sheet, row: header + 2, labels, monthName, fixed });
+  });
+  plans.forEach(p => {
+    const range = p.sheet.getRange(p.row, 1, p.labels.length, 1);
     range.setNumberFormat('@');
-    range.setValues(labels);
-    report.push(monthName + ': ' + changed + ' celle riscritte');
+    range.setValues(p.labels);
+    report.push(p.monthName + ': ' + p.fixed + ' date corrette');
   });
   Logger.log(report.join('\n'));
   return report;

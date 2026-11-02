@@ -109,3 +109,33 @@ test('riparaDate riscrive come testo le date-martedì corrotte senza toccare gli
   assert.strictEqual(sheet.cells[29][2], 2122.84);
   assert.strictEqual(sheet.cells[34][0], 'TOTALI');
 });
+
+function allTabs(sheets) {
+  const all = {};
+  ['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE']
+    .forEach(n => { all[n] = sheets[n] || null; });
+  return all;
+}
+
+test('riparaDate si ferma senza scrivere nulla se un giorno non corrisponde alla sua riga', () => {
+  const set = Array.from({ length: 30 }, (_, i) => new Date(2026, 8, i + 1));
+  set[7] = new Date(2009, 2, 8);               // martedì 08/09 corrotto
+  const settembre = fakeSheet('SETTEMBRE 2026', set);
+  const days = ottobre();
+  days[3] = 'mer 05/10';                       // riga del 4/10 con l'etichetta di un altro giorno
+  const ott = fakeSheet('OTTOBRE 2026', days);
+  const { api } = load(allTabs({ SETTEMBRE: settembre, OTTOBRE: ott }));
+
+  assert.throws(() => api.riparaDate(2026), /OTTOBRE riga 7/);
+  assert.ok(settembre.cells[10][0] instanceof Date, 'SETTEMBRE non doveva essere toccato');
+  assert.deepStrictEqual(Object.keys(settembre.formats), []);
+});
+
+test('riparaDate conta solo le date davvero corrette, non le Date già giuste', () => {
+  const days = ottobre();
+  days[26] = new Date(2010, 2, 27);
+  const { api } = load(allTabs({ OTTOBRE: fakeSheet('OTTOBRE 2026', days) }));
+
+  const report = api.riparaDate(2026);
+  assert.ok(report.some(r => r.startsWith('OTTOBRE: 1 date corrette')), report.join(' / '));
+});

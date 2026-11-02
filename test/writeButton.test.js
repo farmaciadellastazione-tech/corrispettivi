@@ -49,3 +49,20 @@ test('un nuovo risultato riattiva il pulsante anche senza passare da "Nuovo scon
   api.renderResult({ data: '2026-10-31', farmaco: 2554.82 });
   assert.strictEqual(els('write-btn').disabled, false);
 });
+
+test('mentre una scrittura è in corso, un secondo tocco non invia un altro salvataggio', async () => {
+  const pending = [];
+  const slowFetch = () => new Promise(r => pending.push(r));
+  const { api, els } = loadApp(slowFetch);
+  els('date-input').value = '2026-10-30';
+  const first = api.writeToSheet();
+  api.resetAll();
+  api.renderResult({ data: '2026-10-31', farmaco: 2554.82 });
+  els('date-input').value = '2026-10-31';
+  const second = api.writeToSheet();
+  const calls = pending.length;
+  const ok = { text: async () => JSON.stringify({ date: 'ven 30/10', tab: 'OTTOBRE', total: 100 }) };
+  pending.forEach(r => r(ok));
+  await Promise.all([first, second]);
+  assert.strictEqual(calls, 1);
+});
