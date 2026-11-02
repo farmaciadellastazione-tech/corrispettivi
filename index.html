@@ -197,7 +197,7 @@
     </div>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
-  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.5</div>
+  <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.3.6</div>
   <button onclick="window.close()" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;">✕ Chiudi app</button>
 </main>
 <script>
@@ -385,6 +385,7 @@ function renderResult(data) {
     c.appendChild(row);
   });
   calcTotal();
+  document.getElementById('write-btn').disabled = false;
   document.getElementById('result-card').style.display = 'block';
 }
 
@@ -431,6 +432,7 @@ function resetAll() {
   document.getElementById('file-btn').style.display = '';
   ['preview-container','result-card','status-box','success-msg','error-box'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('write-btn').disabled = false;
   document.getElementById('note-input').value = '';
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
 }
