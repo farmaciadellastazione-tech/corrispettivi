@@ -74,8 +74,9 @@ function writeToSheet(fields, dateStr, note) {
   const total = [F.asl, F.farmaco, F.parafarmaco, F.varie, F.servizi0, F.serviziIva, F.shopper, F.dpi]
                 .reduce((s, v) => s + (parseFloat(v) || 0), 0) + fatture - (parseFloat(F.scontrini) || 0);
 
-  sheet.getRange(targetRow, 1, 1, 11).setValues([[
-    label,
+  // La colonna A (data) non si riscrive: Google Fogli in italiano legge
+  // "mar 27/10" come 27 marzo 2010 e corrompe tutti i martedì.
+  sheet.getRange(targetRow, 2, 1, 10).setValues([[
     n(F.asl), n(F.farmaco), n(F.parafarmaco), n(F.varie),
     n(F.servizi0), n(F.serviziIva), n(F.shopper), n(F.dpi), n(fatture), n(F.scontrini)
   ]]);
@@ -180,6 +181,40 @@ function writeFattura(req) {
   if (nota || existingNote) sheet.getRange(targetRow, 13).setValue(newNote);
 
   return { ok: true, data: label, dailyTotal: newFatture };
+}
+
+// Riparazione una tantum delle date in colonna A (bug dei martedì letti come marzo).
+// Per ogni tab mensile riscrive come TESTO l'etichetta corretta "gg dd/mm" di ogni
+// riga-giorno, partendo dalla riga sotto l'intestazione "Data". Tocca solo la colonna A.
+function riparaDate(year) {
+  year = year || 2026;
+  const ssId = FOGLI[year];
+  if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
+  const ss = SpreadsheetApp.openById(ssId);
+  const report = [];
+  MONTH_NAMES.forEach((monthName, m) => {
+    const sheet = ss.getSheetByName(monthName);
+    if (!sheet) { report.push(monthName + ': tab non trovato'); return; }
+    const colA   = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().map(r => r[0]);
+    const header = colA.findIndex(v => String(v).trim() === 'Data');
+    if (header < 0) { report.push(monthName + ': intestazione "Data" non trovata'); return; }
+    const days   = new Date(year, m + 1, 0).getDate();
+    const labels = [];
+    for (let d = 1; d <= days; d++) {
+      const cur = colA[header + d];
+      if (!(cur instanceof Date) && rowLabel(cur) === null) {
+        throw new Error(monthName + ' riga ' + (header + d + 1) + ': valore inatteso "' + cur + '", nessuna modifica al tab');
+      }
+      labels.push([formatLabel(new Date(year, m, d, 12))]);
+    }
+    const changed = labels.filter((l, i) => colA[header + 1 + i] !== l[0]).length;
+    const range = sheet.getRange(header + 2, 1, days, 1);
+    range.setNumberFormat('@');
+    range.setValues(labels);
+    report.push(monthName + ': ' + changed + ' celle riscritte');
+  });
+  Logger.log(report.join('\n'));
+  return report;
 }
 
 function formatLabel(date) {
