@@ -13,7 +13,7 @@ function doPost(e) {
     const req = JSON.parse(e.postData.contents);
     if (req.action === 'sendReport')   return out(sendMonthReport(req.year, req.month));
     if (req.action === 'writeFattura') return out(writeFattura(req));
-    return out(writeToSheet(req.fields, req.date, req.note || ''));
+    return out(writeToSheet(req.fields, req.date, req.note || '', req.cassa));
   } catch(err) {
     return out({ error: err.message });
   }
@@ -46,14 +46,19 @@ function rowLabel(val) {
   return /^[a-z]{3}\s\d{2}\/\d{2}$/.test(s) ? s : null;
 }
 
-function writeToSheet(fields, dateStr, note) {
+// Tab della cassa: Cassa 1 = "NOVEMBRE" (il tab storico), Cassa 2 = "NOVEMBRE C2".
+function cassaTab(monthName, cassa) {
+  return Number(cassa) === 2 ? monthName + ' C2' : monthName;
+}
+
+function writeToSheet(fields, dateStr, note, cassa) {
   const date      = new Date(dateStr + 'T12:00:00');
   const year      = date.getFullYear();
   const ssId      = FOGLI[year];
   if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
 
   const ss        = SpreadsheetApp.openById(ssId);
-  const monthName = MONTH_NAMES[date.getMonth()];
+  const monthName = cassaTab(MONTH_NAMES[date.getMonth()], cassa);
   const sheet     = ss.getSheetByName(monthName);
   if (!sheet) throw new Error('Tab "' + monthName + '" non trovato');
 
