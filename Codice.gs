@@ -233,6 +233,70 @@ function riparaDate(year) {
   return report;
 }
 
+// Seconda cassa: da lanciare UNA VOLTA dall'editor Apps Script quando arriva il
+// secondo registratore, es. preparaCassa2(2026, 12) = da dicembre 2026 in poi.
+// Per ogni mese da meseIniziale (1-12) a dicembre copia il tab del mese (Cassa 1) in:
+//   "MESE C2"  → stessa struttura, importi (B–K) e note (M) vuoti
+//   "MESE TOT" → B–K = somma delle due casse, M = note unite; resta vuoto se lo
+//                sono entrambe (giorno a cassa singola)
+// La formula del totale (L) e le righe TOTALI/PERCENTUALI restano quelle copiate.
+// Prima controlla tutti i mesi: se un tab C2/TOT esiste già o una data non torna
+// si ferma senza creare nulla. Il tab della Cassa 1 non viene mai modificato.
+function preparaCassa2(year, meseIniziale) {
+  const ssId = FOGLI[year];
+  if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
+  if (!(meseIniziale >= 1 && meseIniziale <= 12)) throw new Error('meseIniziale deve essere tra 1 e 12');
+  const ss = SpreadsheetApp.openById(ssId);
+
+  const plans = [];
+  for (let m = meseIniziale - 1; m < 12; m++) {
+    const monthName = MONTH_NAMES[m];
+    const sheet = ss.getSheetByName(monthName);
+    if (!sheet) throw new Error('Tab "' + monthName + '" non trovato. Nessuna modifica al foglio.');
+    [' C2', ' TOT'].forEach(suf => {
+      if (ss.getSheetByName(monthName + suf)) {
+        throw new Error('Il tab "' + monthName + suf + '" esiste già. Nessuna modifica al foglio.');
+      }
+    });
+    const colA   = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().map(r => r[0]);
+    const header = colA.findIndex(v => String(v).trim() === 'Data');
+    if (header < 0) throw new Error(monthName + ': intestazione "Data" non trovata. Nessuna modifica al foglio.');
+    const days = new Date(year, m + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const exp = formatLabel(new Date(year, m, d, 12));
+      if (rowLabel(colA[header + d]) !== exp) {
+        throw new Error(monthName + ' riga ' + (header + d + 1) + ': atteso "' + exp + '", trovato "' +
+                        colA[header + d] + '". Nessuna modifica al foglio.');
+      }
+    }
+    plans.push({ sheet, monthName, first: header + 2, days });
+  }
+
+  const report = [];
+  plans.forEach(p => {
+    const c2 = p.sheet.copyTo(ss).setName(p.monthName + ' C2');
+    c2.getRange(p.first, 2, p.days, 10).clearContent();
+    c2.getRange(p.first, 13, p.days, 1).clearContent();
+
+    const tot = p.sheet.copyTo(ss).setName(p.monthName + ' TOT');
+    const a = "'" + p.monthName + "'!", b = "'" + p.monthName + " C2'!";
+    const sums = [], notes = [];
+    for (let i = 0; i < p.days; i++) {
+      const row = p.first + i;
+      sums.push('BCDEFGHIJK'.split('').map(col => {
+        const refs = a + col + row + ',' + b + col + row;
+        return '=IF(COUNT(' + refs + '),SUM(' + refs + '),"")';
+      }));
+      notes.push(['=TEXTJOIN(" · ",TRUE,' + a + 'M' + row + ',' + b + 'M' + row + ')']);
+    }
+    tot.getRange(p.first, 2, p.days, 10).setFormulas(sums);
+    tot.getRange(p.first, 13, p.days, 1).setFormulas(notes);
+    report.push(p.monthName + ': creati "' + p.monthName + ' C2" e "' + p.monthName + ' TOT"');
+  });
+  Logger.log(report.join('\n'));
+  return report;
+}
+
 function formatLabel(date) {
   return DAY_NAMES[date.getDay()] + ' ' +
          String(date.getDate()).padStart(2, '0') + '/' +
