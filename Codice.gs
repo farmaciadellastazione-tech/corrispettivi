@@ -98,7 +98,8 @@ function sendMonthReport(year, month) {
   if (!ssId) throw new Error('Foglio ' + year + ' non configurato nella costante FOGLI');
   const ss        = SpreadsheetApp.openById(ssId);
   const monthName = MONTH_NAMES[month - 1];
-  const sheet     = ss.getSheetByName(monthName);
+  // Con due casse si manda la somma (tab "MESE TOT"), altrimenti il tab del mese.
+  const sheet     = ss.getSheetByName(monthName + ' TOT') || ss.getSheetByName(monthName);
   if (!sheet) throw new Error('Tab "' + monthName + '" non trovato');
   const lastRow = sheet.getLastRow();
   if (lastRow < 1) throw new Error('Nessun dato nel tab ' + monthName);

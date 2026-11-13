@@ -91,3 +91,38 @@ test('doPost passa la cassa a writeToSheet', () => {
   assert.strictEqual(out.tab, 'NOVEMBRE C2');
   assert.strictEqual(c2.cells[3][2], 2000);
 });
+
+// --- Report mensile ---------------------------------------------------------
+
+function loadReport(tabs) {
+  const sent = [];
+  const ss = { getSheetByName: name => tabs[name] || null, getUrl: () => 'https://example/foglio' };
+  const SpreadsheetApp = { openById: () => ss };
+  const MailApp   = { sendEmail: m => sent.push(m) };
+  const Utilities = { newBlob: (data, type, name) => ({ data, type, name }) };
+  const fn = new Function('SpreadsheetApp', 'MailApp', 'Utilities', code + '\nreturn sendMonthReport;')(SpreadsheetApp, MailApp, Utilities);
+  return { sendMonthReport: fn, sent };
+}
+
+test('report: se esiste il tab TOT, la commercialista riceve i totali delle due casse', () => {
+  const c1  = fakeSheet(['ven 13/11']);
+  const tot = fakeSheet(['ven 13/11']);
+  c1.cells[3][2]  = 1000;
+  tot.cells[3][2] = 1300;
+  const { sendMonthReport, sent } = loadReport({ 'NOVEMBRE': c1, 'NOVEMBRE TOT': tot });
+
+  sendMonthReport(2026, 11);
+
+  assert.match(sent[0].attachments[0].data, /ven 13\/11;;1300;/);
+  assert.doesNotMatch(sent[0].attachments[0].data, /;1000;/);
+});
+
+test('report: senza tab TOT (una sola cassa) si usa il tab del mese, come prima', () => {
+  const c1 = fakeSheet(['ven 13/11']);
+  c1.cells[3][2] = 1000;
+  const { sendMonthReport, sent } = loadReport({ 'NOVEMBRE': c1 });
+
+  sendMonthReport(2026, 11);
+
+  assert.match(sent[0].attachments[0].data, /ven 13\/11;;1000;/);
+});
