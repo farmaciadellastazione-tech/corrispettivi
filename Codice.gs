@@ -272,27 +272,40 @@ function preparaCassa2(year, meseIniziale) {
     plans.push({ sheet, monthName, first: header + 2, days });
   }
 
+  // Se qualcosa si blocca a metà (quota, timeout…) si cancellano i tab creati
+  // in questa esecuzione, così la funzione si può rilanciare.
+  const created = [];
+  const copy = (sheet, name) => { const s = sheet.copyTo(ss); created.push(s); return s.setName(name); };
   const report = [];
-  plans.forEach(p => {
-    const c2 = p.sheet.copyTo(ss).setName(p.monthName + ' C2');
-    c2.getRange(p.first, 2, p.days, 10).clearContent();
-    c2.getRange(p.first, 13, p.days, 1).clearContent();
+  try {
+    plans.forEach(p => {
+      const a = "'" + p.monthName + "'!", b = "'" + p.monthName + " C2'!";
+      const sums = [], notes = [], totals = [];
+      for (let i = 0; i < p.days; i++) {
+        const row = p.first + i;
+        sums.push('BCDEFGHIJK'.split('').map(col => {
+          const refs = a + col + row + ',' + b + col + row;
+          return '=IF(COUNT(' + refs + '),ROUND(SUM(' + refs + '),2),"")';
+        }));
+        notes.push(['=TEXTJOIN(" · ",TRUE,' + a + 'M' + row + ',' + b + 'M' + row + ')']);
+        totals.push(['=SUM(B' + row + ':J' + row + ')-K' + row]);
+      }
 
-    const tot = p.sheet.copyTo(ss).setName(p.monthName + ' TOT');
-    const a = "'" + p.monthName + "'!", b = "'" + p.monthName + " C2'!";
-    const sums = [], notes = [];
-    for (let i = 0; i < p.days; i++) {
-      const row = p.first + i;
-      sums.push('BCDEFGHIJK'.split('').map(col => {
-        const refs = a + col + row + ',' + b + col + row;
-        return '=IF(COUNT(' + refs + '),SUM(' + refs + '),"")';
-      }));
-      notes.push(['=TEXTJOIN(" · ",TRUE,' + a + 'M' + row + ',' + b + 'M' + row + ')']);
-    }
-    tot.getRange(p.first, 2, p.days, 10).setFormulas(sums);
-    tot.getRange(p.first, 13, p.days, 1).setFormulas(notes);
-    report.push(p.monthName + ': creati "' + p.monthName + ' C2" e "' + p.monthName + ' TOT"');
-  });
+      const c2 = copy(p.sheet, p.monthName + ' C2');
+      c2.getRange(p.first, 2, p.days, 10).clearContent();
+      c2.getRange(p.first, 12, p.days, 1).setFormulas(totals);
+      c2.getRange(p.first, 13, p.days, 1).clearContent();
+
+      const tot = copy(p.sheet, p.monthName + ' TOT');
+      tot.getRange(p.first, 2, p.days, 10).setFormulas(sums);
+      tot.getRange(p.first, 12, p.days, 1).setFormulas(totals);
+      tot.getRange(p.first, 13, p.days, 1).setFormulas(notes);
+      report.push(p.monthName + ': creati "' + p.monthName + ' C2" e "' + p.monthName + ' TOT"');
+    });
+  } catch (err) {
+    created.forEach(s => ss.deleteSheet(s));
+    throw new Error(err.message + ' — tab C2/TOT creati in questa esecuzione cancellati, si può rilanciare.');
+  }
   Logger.log(report.join('\n'));
   return report;
 }

@@ -150,7 +150,10 @@ function sheetFrom(name, cells) {
   const sh = {
     name, cells,
     getName: () => sh.name,
-    setName: n => { sh.name = n; return sh; },
+    setName: n => {
+      if (sh._ss && sh._ss._failOn === n) throw new Error('errore simulato su ' + n);
+      sh.name = n; return sh;
+    },
     getLastRow: () => cells.length,
     copyTo: ss => ss._add(sheetFrom('Copia di ' + sh.name, cells.map(r => r.slice()))),
     getRange: (row, col, nRows = 1, nCols = 1) => {
@@ -169,7 +172,8 @@ function loadPrepara(year, months) {
   const sheets = [];
   const ss = {
     getSheetByName: n => sheets.find(s => s.name === n) || null,
-    _add: s => { sheets.push(s); return s; },
+    _add: s => { s._ss = ss; sheets.push(s); return s; },
+    deleteSheet: s => { const i = sheets.indexOf(s); if (i >= 0) sheets.splice(i, 1); },
   };
   months.forEach(m => ss._add(monthSheet(['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO',
     'AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'][m], year, m)));
@@ -204,9 +208,9 @@ test('preparaCassa2 crea C2 vuoto e TOT con le somme, dal mese indicato in poi',
   // TOT: somma cella per cella delle due casse; vuoto se entrambe vuote (giorno a cassa singola ok)
   assert.strictEqual(tot.cells[r13 - 1][0], 'ven 13/11');
   assert.strictEqual(tot.cells[r13 - 1][2],
-    "=IF(COUNT('NOVEMBRE'!C16,'NOVEMBRE C2'!C16),SUM('NOVEMBRE'!C16,'NOVEMBRE C2'!C16),\"\")");
+    "=IF(COUNT('NOVEMBRE'!C16,'NOVEMBRE C2'!C16),ROUND(SUM('NOVEMBRE'!C16,'NOVEMBRE C2'!C16),2),\"\")");
   assert.strictEqual(tot.cells[r13 - 1][10],
-    "=IF(COUNT('NOVEMBRE'!K16,'NOVEMBRE C2'!K16),SUM('NOVEMBRE'!K16,'NOVEMBRE C2'!K16),\"\")");
+    "=IF(COUNT('NOVEMBRE'!K16,'NOVEMBRE C2'!K16),ROUND(SUM('NOVEMBRE'!K16,'NOVEMBRE C2'!K16),2),\"\")");
   assert.strictEqual(tot.cells[r13 - 1][11], '=SUM(B16:J16)-K16');
   assert.strictEqual(tot.cells[r13 - 1][12], "=TEXTJOIN(\" · \",TRUE,'NOVEMBRE'!M16,'NOVEMBRE C2'!M16)");
   assert.strictEqual(tot.cells[33][0], 'TOTALI');
@@ -235,4 +239,28 @@ test('preparaCassa2 si ferma senza creare nulla se le date di un mese non tornan
 
   assert.throws(() => preparaCassa2(2026, 11), /DICEMBRE/);
   assert.strictEqual(sheets.length, before);
+});
+
+test('preparaCassa2 rimette la formula del totale (L) in C2 e TOT anche se nella Cassa 1 c\'è un valore fisso', () => {
+  const { preparaCassa2, ss } = loadPrepara(2026, ALL);
+  ss.getSheetByName('DICEMBRE').cells[3 + 4][11] = 1234.5;      // sab 05/12 → riga 8, L scritto a mano
+
+  preparaCassa2(2026, 12);
+
+  assert.strictEqual(ss.getSheetByName('DICEMBRE C2').cells[7][11],  '=SUM(B8:J8)-K8');
+  assert.strictEqual(ss.getSheetByName('DICEMBRE TOT').cells[7][11], '=SUM(B8:J8)-K8');
+  assert.strictEqual(ss.getSheetByName('DICEMBRE').cells[7][11], 1234.5);   // Cassa 1 intatta
+});
+
+test('preparaCassa2: se si blocca a metà cancella i tab appena creati e si può rilanciare', () => {
+  const { preparaCassa2, ss, sheets } = loadPrepara(2026, ALL);
+  const before = sheets.map(s => s.name);
+  ss._failOn = 'DICEMBRE TOT';
+
+  assert.throws(() => preparaCassa2(2026, 11), /DICEMBRE TOT/);
+  assert.deepStrictEqual(sheets.map(s => s.name), before);
+
+  ss._failOn = null;
+  preparaCassa2(2026, 11);
+  assert.ok(ss.getSheetByName('DICEMBRE TOT'));
 });
