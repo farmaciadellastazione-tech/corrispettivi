@@ -92,6 +92,10 @@
   .setting-row input:focus { border-color: var(--accent); }
   .btn-save { align-self: flex-end; background: var(--accent); border: none; border-radius: 8px; padding: 13px 24px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
   .btn-save:active { opacity: 0.85; }
+  .check-row { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); cursor: pointer; }
+  .check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+  #cassa-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; color: var(--text); font-size: 16px; font-weight: 700; outline: none; }
+  #cassa-input:focus { border-color: var(--accent); }
   #report-panel { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; flex-direction: column; gap: 12px; }
   #report-panel.show { display: flex; }
   .report-ok  { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; padding: 12px 14px; font-size: 15px; color: var(--green); }
@@ -140,6 +144,9 @@
   <div id="result-card">
     <div class="result-header"><h3>Dati estratti — verifica</h3><span class="badge badge-amber">Controlla</span></div>
     <div class="date-row"><span>Data</span><input type="date" id="date-input"></div>
+    <div class="date-row" id="cassa-row" style="display:none"><span>Cassa</span>
+      <select id="cassa-input"><option value="">— scegli —</option><option value="1">Cassa 1</option><option value="2">Cassa 2</option></select>
+    </div>
     <div id="warn-date" class="warn-banner" style="display:none"><strong>⚠️ Data diversa da oggi</strong>Lo scontrino riporta una data diversa — controlla se è stato battuto dopo la mezzanotte.</div>
     <div id="warn-overwrite" class="warn-banner" style="display:none"><strong>⚠️ Dati precedenti sostituiti</strong>La nuova analisi ha sovrascritto i valori già presenti.</div>
     <div id="result-rows"></div>
@@ -195,6 +202,7 @@
       <label>URL Apps Script</label>
       <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
+    <label class="check-row"><input type="checkbox" id="due-casse-input"> Seconda cassa attiva (chiede la cassa a ogni scontrino)</label>
     <button class="btn-save" onclick="saveSettings()">Salva</button>
   </div>
   <div style="text-align:center;font-size:13px;color:var(--muted);padding:10px 0 4px">v1.4.0</div>
@@ -213,8 +221,7 @@ let imgB64 = null, imgType = 'image/jpeg';
 let writing = false;
 
 window.addEventListener('load', () => {
-  document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
-  document.getElementById('script-url').value = localStorage.getItem('gas_url') || DEFAULT_URL;
+  loadSettings();
   document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
   document.getElementById('fat-data').value = new Date().toISOString().split('T')[0];
   const now = new Date();
@@ -227,6 +234,14 @@ function checkKeyWarning() {
 }
 function getKey() { return localStorage.getItem('gemini_key') || ''; }
 function getUrl() { return (localStorage.getItem('gas_url') || DEFAULT_URL).trim(); }
+function dueCasse() { return localStorage.getItem('due_casse') === '1'; }
+
+function loadSettings() {
+  document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key') || '';
+  document.getElementById('script-url').value = localStorage.getItem('gas_url') || DEFAULT_URL;
+  document.getElementById('due-casse-input').checked = dueCasse();
+  document.getElementById('cassa-row').style.display = dueCasse() ? 'flex' : 'none';
+}
 
 function toggleFattura()  { document.getElementById('fattura-panel').classList.toggle('show'); }
 function toggleReport()   { document.getElementById('report-panel').classList.toggle('show'); }
@@ -238,6 +253,8 @@ function saveSettings() {
   const url = document.getElementById('script-url').value.trim();
   if (key) localStorage.setItem('gemini_key', key);
   if (url) localStorage.setItem('gas_url', url);
+  localStorage.setItem('due_casse', document.getElementById('due-casse-input').checked ? '1' : '0');
+  document.getElementById('cassa-row').style.display = dueCasse() ? 'flex' : 'none';
   checkKeyWarning();
   document.getElementById('settings-panel').classList.remove('show');
   toast('Impostazioni salvate ✓');
@@ -386,6 +403,7 @@ function renderResult(data) {
     c.appendChild(row);
   });
   calcTotal();
+  document.getElementById('cassa-input').value = '';   // ogni scontrino: la cassa va scelta di nuovo
   document.getElementById('write-btn').disabled = writing;
   document.getElementById('result-card').style.display = 'block';
 }
@@ -408,17 +426,21 @@ async function writeToSheet() {
   if (!date) return showError('Seleziona la data.');
   const fields = {}; FIELDS.forEach(f => { fields[f.key] = parse(document.getElementById('f-' + f.key)?.value); });
   const note = document.getElementById('note-input').value.trim();
+  const cassa = dueCasse() ? parseInt(document.getElementById('cassa-input').value, 10) : undefined;
+  if (dueCasse() && !cassa) return showError('Scegli la cassa (Cassa 1 o Cassa 2).');
   if (writing) return;  // un salvataggio è già in corso: niente doppio invio
   writing = true;
+  document.getElementById('error-box').style.display = 'none';
   setStatus('Scrittura nel foglio…'); document.getElementById('write-btn').disabled = true;
   try {
-    const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ fields, date, note }) });
+    const resp = await fetch(getUrl(), { method: 'POST', body: JSON.stringify({ fields, date, note, cassa }) });
     const data = JSON.parse(await resp.text());
     if (data.error) throw new Error(data.error);
     hideStatus();
     document.getElementById('result-card').style.display = 'none';
     document.getElementById('success-msg').style.display = 'block';
-    document.getElementById('success-detail').textContent = `${data.date} · ${data.tab} · Totale € ${fmt(data.total)}`;
+    document.getElementById('success-detail').textContent =
+      `${data.date} · ${data.tab}${cassa ? ' · Cassa ' + cassa : ''} · Totale € ${fmt(data.total)}`;
   } catch(err) {
     hideStatus(); showError(err.message);
     document.getElementById('write-btn').disabled = false;
